@@ -20,6 +20,14 @@ from sahara.plugins import utils as gu
 from sahara.service.edp import hdfs_helper as h
 from sahara.utils import cluster_progress_ops as cpo
 
+
+def _step_description(x):
+    return {
+        'step': gu.start_process_event_message(x),
+        'param': ('cluster', 0)
+    }
+
+
 PACKAGES = [
     'cloudera-manager-agent',
     'cloudera-manager-daemons',
@@ -63,7 +71,6 @@ CU = cu.ClouderaUtilsV530()
 
 def configure_cluster(cluster):
     instances = gu.get_instances(cluster)
-
     if not cmd.is_pre_installed_cdh(CU.pu.get_manager(cluster).remote()):
         CU.pu.configure_os(instances)
         CU.pu.install_packages(instances, PACKAGES)

@@ -230,6 +230,10 @@ class OozieJobEngine(base_engine.JobEngine):
                 edp.JOB_TYPE_PIG,
                 edp.JOB_TYPE_SHELL]
 
+    @staticmethod
+    def check_if_spark_job():
+        return [edp.JOB_TYPE_SPARK]
+
     def _upload_job_files_to_hdfs(self, where, job_dir, job, configs,
                                   proxy_configs=None):
         mains = job.mains or []

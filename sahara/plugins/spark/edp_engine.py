@@ -13,14 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from sahara import exceptions as ex
 from sahara.i18n import _
+from sahara.plugins.spark import config_helper as c_helper
+from sahara.plugins import utils as plugin_utils
 from sahara.service.edp.spark import engine as edp_engine
 
 
 class EdpEngine(edp_engine.SparkJobEngine):
 
     edp_base_version = "1.0.0"
+
+    def __init__(self, cluster):
+        super(EdpEngine, self).__init__(cluster)
+        self.master = plugin_utils.get_instance(cluster, "master")
+        self.plugin_params["spark-user"] = ""
+        self.plugin_params["spark-submit"] = os.path.join(
+            c_helper.get_config_value("Spark",
+                                      "Spark home",
+                                      self.cluster),
+            "bin/spark-submit")
+        self.plugin_params["deploy-mode"] = "client"
+        host = self.master.hostname()
+        port = c_helper.get_config_value("Spark", "Master port", cluster)
+        self.plugin_params["master"] = ('spark://' + host + ':' + port)
 
     @staticmethod
     def edp_supported(version):

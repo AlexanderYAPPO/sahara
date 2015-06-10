@@ -91,7 +91,6 @@ def check_job_execution(data, job_id):
             _("Cluster with id '%(cluster_id)s' doesn't support job type "
               "'%(job_type)s'") % {"cluster_id": cluster.id,
                                    "job_type": job.type})
-
     edp_engine.validate_job_execution(cluster, job, data)
 
 
