@@ -24,7 +24,6 @@ from sahara import context
 from sahara import exceptions as e
 from sahara.i18n import _
 from sahara.plugins.spark import config_helper as c_helper
-from sahara.plugins import utils as plugin_utils
 from sahara.service.edp import base_engine
 from sahara.service.edp.binary_retrievers import dispatch
 from sahara.service.edp import hdfs_helper as h
@@ -49,10 +48,10 @@ class SparkJobEngine(base_engine.JobEngine):
         self.master = None
         # These parameters depend on engine that is used
         self.plugin_params = {"master": "",
-            "spark-user": "",
-            "deploy-mode": "",
-            "spark-submit": ""
-        }
+                              "spark-user": "",
+                              "deploy-mode": "",
+                              "spark-submit": ""
+                              }
 
     def _get_pid_and_inst_id(self, job_id):
         try:
@@ -191,8 +190,8 @@ class SparkJobEngine(base_engine.JobEngine):
     def run_job(self, job_execution):
         ctx = context.ctx()
         job = conductor.job_get(ctx, job_execution.job_id)
-        indep_params = {"driver_cp": self.get_driver_classpath()}
 
+        indep_params = {"driver_cp": self.get_driver_classpath()}
         data_source_urls = {}
         additional_sources, updated_job_configs = (
             job_utils.resolve_data_source_references(
@@ -207,10 +206,18 @@ class SparkJobEngine(base_engine.JobEngine):
                 h.configure_cluster_for_hdfs(self.cluster, data_source)
                 break
 
+        # It is needed in case we are working with Spark plugin
+        self.plugin_params['master'] =\
+            self.plugin_params['master'] % {
+                'host': self.master.hostname(),
+                'port': c_helper.get_config_value(
+                    "Spark", "Master port",  self.cluster)
+            }
+
         # TODO(tmckay): wf_dir should probably be configurable.
         # The only requirement is that the dir is writable by the image user
-        wf_dir = job_utils.create_workflow_dir(self.master, '/tmp/spark-edp', job,
-                                               job_execution.id, "700")
+        wf_dir = job_utils.create_workflow_dir(self.master, '/tmp/spark-edp',
+                                               job, job_execution.id, "700")
         paths, builtin_paths = self._upload_job_files(
             self.master, wf_dir, job, updated_job_configs)
 
@@ -248,29 +255,29 @@ class SparkJobEngine(base_engine.JobEngine):
 
         # All additional jars are passed with the --jars option
         if indep_params["addnl_jars"]:
-            indep_params["addnl_jars"] = (" --jars " +
-                                               indep_params["addnl_jars"])
+            indep_params["addnl_jars"] =\
+                (" --jars " + indep_params["addnl_jars"])
 
         # Launch the spark job using spark-submit and deploy_mode = client
         indep_params["host"] = self.master.hostname()
-        indep_params["port"] = c_helper.get_config_value("Spark", "Master port",
-                                                         self.cluster)
+        indep_params["port"] =\
+            c_helper.get_config_value("Spark", "Master port",  self.cluster)
         # TODO(tmckay): we need to clean up wf_dirs on long running clusters
         # TODO(tmckay): probably allow for general options to spark-submit
         indep_params["args"] = updated_job_configs.get('args', [])
         indep_params["args"] = " ".join([su.inject_swift_url_suffix(arg)
                                          for arg in indep_params["args"]])
-        if "args" in indep_params:
+        if "args" in indep_params and indep_params["args"]:
             indep_params["args"] = (" " + indep_params["args"])
-
 
         if "wrapper_jar" in indep_params and "wrapper_class" in indep_params:
             # Substrings which may be empty have spaces
             # embedded if they are non-empty
             cmd = (
-                '%(spark_submit)s%(driver_cp)s'
+                '%(spark-user)s%(spark-submit)s%(driver_cp)s'
                 ' --class %(wrapper_class)s%(addnl_jars)s'
                 ' --master %(master)s'
+                ' --deploy-mode %(deploy-mode)s'
                 ' %(wrapper_jar)s %(wrapper_args)s%(args)s') % dict(
                 self.plugin_params.items() + indep_params.items())
         else:

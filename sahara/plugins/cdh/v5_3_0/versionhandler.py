@@ -21,8 +21,8 @@ from sahara.plugins.cdh.v5_3_0 import cloudera_utils as cu
 from sahara.plugins.cdh.v5_3_0 import config_helper as c_helper
 from sahara.plugins.cdh.v5_3_0 import deploy as dp
 from sahara.plugins.cdh.v5_3_0 import edp_engine
-from sahara.plugins.cdh.v5_3_0 import validation as vl
 from sahara.plugins.cdh.v5_3_0 import edp_engine_cdh as spark_edp_engine
+from sahara.plugins.cdh.v5_3_0 import validation as vl
 
 
 conductor = conductor.API
@@ -109,7 +109,8 @@ class VersionHandler(avm.AbstractVersionHandler):
     def get_edp_engine(self, cluster, job_type):
         if job_type in edp_engine.EdpOozieEngine.get_supported_job_types():
             return edp_engine.EdpOozieEngine(cluster)
-        if job_type in edp_engine.EdpOozieEngine.check_if_spark_job():
+        if job_type in spark_edp_engine.EdpCdhSparkEngine.\
+                get_supported_job_types():
             return spark_edp_engine.EdpCdhSparkEngine(cluster)
         return None
 

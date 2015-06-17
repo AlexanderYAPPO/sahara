@@ -36,9 +36,8 @@ class EdpEngine(edp_engine.SparkJobEngine):
                                       self.cluster),
             "bin/spark-submit")
         self.plugin_params["deploy-mode"] = "client"
-        host = self.master.hostname()
         port = c_helper.get_config_value("Spark", "Master port", cluster)
-        self.plugin_params["master"] = ('spark://' + host + ':' + port)
+        self.plugin_params["master"] = ('spark://%(host)s:%(port)s')
 
     @staticmethod
     def edp_supported(version):
